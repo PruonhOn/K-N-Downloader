@@ -1,5 +1,5 @@
 import yt_dlp
-import re
+import os
 
 
 def get_platform(url):
@@ -42,56 +42,95 @@ def format_filesize(bytes_val):
     return f"{bytes_val:.1f} TB"
 
 
-def get_video_info(url):
+def get_cookie_file():
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    cookie_file = os.path.join(base_dir, 'cookies.txt')
+    return cookie_file if os.path.exists(cookie_file) else None
+
+def build_common_opts():
+    cookie_file = get_cookie_file()
+
+    print("COOKIE FILE FOUND:", cookie_file)
+
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
-        'extract_flat': False,
+        'noplaylist': True,
+        'retries': 3,
+        'fragment_retries': 3,
+        'http_headers': {
+            'User-Agent': (
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/123.0.0.0 Safari/537.36'
+            )
+        },
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['mweb', 'android', 'web']
+            }
+        },
     }
+
+    if cookie_file:
+        ydl_opts['cookiefile'] = cookie_file
+
+    return ydl_opts
+
+def get_video_info(url):
+    
+    ydl_opts = build_common_opts()
+    ydl_opts.update({
+        'extract_flat': False,
+        'skip_download': True,
+    })
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            
-            # Get available formats
+
             formats = info.get('formats', [])
-            
             quality_options = []
             seen_heights = set()
-            
+
             for f in formats:
                 height = f.get('height')
                 ext = f.get('ext', '')
                 vcodec = f.get('vcodec', 'none')
-                acodec = f.get('acodec', 'none')
-                
+
                 if height and vcodec != 'none' and height not in seen_heights:
                     seen_heights.add(height)
                     label = f"{height}p"
+
                     if height >= 2160:
                         label = f"4K ({height}p)"
                     elif height >= 1440:
                         label = f"2K ({height}p)"
-                    
+                    elif height == 1080:
+                        label = "1080p (Full HD)"
+                    elif height == 720:
+                        label = "720p (HD)"
+
                     quality_options.append({
                         'height': height,
                         'label': label,
                         'format_id': f.get('format_id', ''),
-                        'filesize': format_filesize(f.get('filesize') or f.get('filesize_approx')),
-                        'ext': ext,
+                        'filesize': format_filesize(
+                            f.get('filesize') or f.get('filesize_approx')
+                        ),
+                        'ext': ext or 'mp4',
                     })
-            
-            # Sort by quality descending
+
             quality_options.sort(key=lambda x: x['height'], reverse=True)
-            
-            # Deduplicate and add standard qualities if missing
+
             if not quality_options:
                 quality_options = [
-                    {'height': 1080, 'label': '1080p (Full HD)', 'format_id': 'best[height<=1080]', 'filesize': 'N/A', 'ext': 'mp4'},
-                    {'height': 720, 'label': '720p (HD)', 'format_id': 'best[height<=720]', 'filesize': 'N/A', 'ext': 'mp4'},
-                    {'height': 480, 'label': '480p', 'format_id': 'best[height<=480]', 'filesize': 'N/A', 'ext': 'mp4'},
-                    {'height': 360, 'label': '360p', 'format_id': 'best[height<=360]', 'filesize': 'N/A', 'ext': 'mp4'},
+                    {'height': 1080, 'label': '1080p (Full HD)', 'format_id': '', 'filesize': 'N/A', 'ext': 'mp4'},
+                    {'height': 720, 'label': '720p (HD)', 'format_id': '', 'filesize': 'N/A', 'ext': 'mp4'},
+                    {'height': 480, 'label': '480p', 'format_id': '', 'filesize': 'N/A', 'ext': 'mp4'},
+                    {'height': 360, 'label': '360p', 'format_id': '', 'filesize': 'N/A', 'ext': 'mp4'},
                 ]
-            
+
             return {
                 'success': True,
                 'title': info.get('title', 'Unknown Title'),
@@ -105,45 +144,63 @@ def get_video_info(url):
                 'qualities': quality_options,
                 'webpage_url': info.get('webpage_url', url),
             }
+
     except Exception as e:
-        return {'success': False, 'error': str(e)}
+        error_message = str(e)
+
+        if 'Sign in to confirm you’re not a bot' in error_message or 'Sign in to confirm you\'re not a bot' in error_message:
+            error_message = 'YouTube blocked this request. Add cookies.txt from your browser and redeploy.'
+
+        return {'success': False, 'error': error_message}
 
 
 def download_video(url, quality_height, format_type, download_dir):
-    import os
-    
     os.makedirs(download_dir, exist_ok=True)
     output_path = os.path.join(str(download_dir), '%(title)s.%(ext)s')
-    
+
+    ydl_opts = build_common_opts()
+    ydl_opts.update({
+        'outtmpl': output_path,
+    })
+
     if format_type == 'mp3':
-        ydl_opts = {
+        ydl_opts.update({
             'format': 'bestaudio/best',
-            'outtmpl': output_path,
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }],
-            'quiet': True,
-        }
+        })
     else:
         if quality_height:
             fmt = f'bestvideo[height<={quality_height}]+bestaudio/best[height<={quality_height}]/best'
         else:
             fmt = 'best'
-        ydl_opts = {
+
+        ydl_opts.update({
             'format': fmt,
-            'outtmpl': output_path,
             'merge_output_format': 'mp4',
-            'quiet': True,
-        }
-    
+        })
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
+
             if format_type == 'mp3':
                 filename = os.path.splitext(filename)[0] + '.mp3'
-            return {'success': True, 'filename': filename, 'title': info.get('title', 'video')}
+
+            return {
+                'success': True,
+                'filename': filename,
+                'title': info.get('title', 'video')
+            }
+
     except Exception as e:
-        return {'success': False, 'error': str(e)}
+        error_message = str(e)
+
+        if 'Sign in to confirm you’re not a bot' in error_message or 'Sign in to confirm you\'re not a bot' in error_message:
+            error_message = 'YouTube blocked this download. Add cookies.txt from your browser and redeploy.'
+
+        return {'success': False, 'error': error_message}
