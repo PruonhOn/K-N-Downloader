@@ -47,17 +47,17 @@ def get_cookie_file():
     cookie_file = os.path.join(base_dir, 'cookies.txt')
     return cookie_file if os.path.exists(cookie_file) else None
 
+
 def build_common_opts():
     cookie_file = get_cookie_file()
-
     print("COOKIE FILE FOUND:", cookie_file)
 
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'noplaylist': True,
-        'retries': 3,
-        'fragment_retries': 3,
+        'retries': 5,
+        'fragment_retries': 5,
         'http_headers': {
             'User-Agent': (
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
@@ -67,7 +67,7 @@ def build_common_opts():
         },
         'extractor_args': {
             'youtube': {
-                'player_client': ['mweb', 'android', 'web']
+                'player_client': ['android', 'web', 'mweb']
             }
         },
     }
@@ -77,8 +77,8 @@ def build_common_opts():
 
     return ydl_opts
 
+
 def get_video_info(url):
-    
     ydl_opts = build_common_opts()
     ydl_opts.update({
         'extract_flat': False,
@@ -100,8 +100,8 @@ def get_video_info(url):
 
                 if height and vcodec != 'none' and height not in seen_heights:
                     seen_heights.add(height)
-                    label = f"{height}p"
 
+                    label = f"{height}p"
                     if height >= 2160:
                         label = f"4K ({height}p)"
                     elif height >= 1440:
@@ -148,8 +148,8 @@ def get_video_info(url):
     except Exception as e:
         error_message = str(e)
 
-        if 'Sign in to confirm you’re not a bot' in error_message or 'Sign in to confirm you\'re not a bot' in error_message:
-            error_message = 'YouTube blocked this request. Add cookies.txt from your browser and redeploy.'
+        if 'Sign in to confirm you’re not a bot' in error_message or "Sign in to confirm you're not a bot" in error_message:
+            error_message = 'YouTube blocked this request. Try new cookies.txt or test another video.'
 
         return {'success': False, 'error': error_message}
 
@@ -174,9 +174,13 @@ def download_video(url, quality_height, format_type, download_dir):
         })
     else:
         if quality_height:
-            fmt = f'bestvideo[height<={quality_height}]+bestaudio/best[height<={quality_height}]/best'
+            fmt = (
+                f'bestvideo[height<={quality_height}][ext=mp4]+bestaudio[ext=m4a]/'
+                f'bestvideo[height<={quality_height}]+bestaudio/'
+                f'best[height<={quality_height}]/best'
+            )
         else:
-            fmt = 'best'
+            fmt = 'bestvideo+bestaudio/best'
 
         ydl_opts.update({
             'format': fmt,
@@ -190,6 +194,10 @@ def download_video(url, quality_height, format_type, download_dir):
 
             if format_type == 'mp3':
                 filename = os.path.splitext(filename)[0] + '.mp3'
+            elif not os.path.exists(filename):
+                alt_filename = os.path.splitext(filename)[0] + '.mp4'
+                if os.path.exists(alt_filename):
+                    filename = alt_filename
 
             return {
                 'success': True,
@@ -200,7 +208,9 @@ def download_video(url, quality_height, format_type, download_dir):
     except Exception as e:
         error_message = str(e)
 
-        if 'Sign in to confirm you’re not a bot' in error_message or 'Sign in to confirm you\'re not a bot' in error_message:
-            error_message = 'YouTube blocked this download. Add cookies.txt from your browser and redeploy.'
+        if 'Requested format is not available' in error_message:
+            error_message = 'Selected quality is not available for this video. Try lower quality.'
+        elif 'Sign in to confirm you’re not a bot' in error_message or "Sign in to confirm you're not a bot" in error_message:
+            error_message = 'YouTube blocked this download. Try new cookies.txt or another video.'
 
         return {'success': False, 'error': error_message}
