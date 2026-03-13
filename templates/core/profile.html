@@ -1,0 +1,314 @@
+{% extends 'core/base.html' %}
+{% block title %}My Profile — VortexDL{% endblock %}
+{% block extra_css %}
+<style>
+    .profile-wrap {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    @media (max-width: 720px) { .profile-wrap { grid-template-columns: 1fr; } }
+
+    .profile-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        position: sticky;
+        top: 80px;
+    }
+
+    .avatar-big {
+        width: 80px; height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent2), var(--accent));
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Syne', sans-serif;
+        font-size: 2rem;
+        font-weight: 800;
+        color: white;
+        margin: 0 auto 1rem;
+    }
+
+    .avatar-big img {
+        width: 100%; height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .profile-name {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.3rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+    }
+
+    .profile-username {
+        color: var(--muted);
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+
+    .profile-bio {
+        font-size: 0.85rem;
+        color: var(--muted);
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .stat-box {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem;
+    }
+
+    .stat-num {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .stat-lbl { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+
+    .main-panel { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .panel-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .panel-header h2 {
+        font-family: 'Syne', sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .panel-body { padding: 1.5rem; }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+
+    .form-group { margin-bottom: 1rem; }
+    .form-label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* HISTORY TABLE */
+    .history-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .hist-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        transition: border-color 0.2s;
+    }
+    .hist-row:hover { border-color: rgba(99,179,237,0.25); }
+
+    .hist-thumb {
+        width: 64px; height: 40px;
+        object-fit: cover;
+        border-radius: 6px;
+        background: var(--surface);
+        flex-shrink: 0;
+    }
+
+    .hist-info { flex: 1; min-width: 0; }
+    .hist-title { font-size: 0.875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hist-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+
+    .tag {
+        padding: 0.2rem 0.5rem;
+        border-radius: 5px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .tag-mp4 { background: rgba(99,179,237,0.15); color: var(--accent); }
+    .tag-mp3 { background: rgba(16,185,129,0.15); color: var(--accent3); }
+
+    .del-btn {
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 0.3rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+    .del-btn:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--muted);
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state p { font-size: 0.9rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-wrap">
+    <!-- SIDEBAR -->
+    <aside>
+        <div class="profile-card">
+            <div class="avatar-big">
+                {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="Avatar">
+                {% else %}
+                {{ user.username|first|upper }}
+                {% endif %}
+            </div>
+            <div class="profile-name">{{ user.get_full_name|default:user.username }}</div>
+            <div class="profile-username">@{{ user.username }}</div>
+            {% if profile.bio %}
+            <div class="profile-bio">{{ profile.bio }}</div>
+            {% endif %}
+            <div class="stat-row">
+                <div class="stat-box">
+                    <div class="stat-num">{{ profile.total_downloads }}</div>
+                    <div class="stat-lbl">Downloads</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-num">{{ downloads.count }}</div>
+                    <div class="stat-lbl">Saved</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main-panel">
+        <!-- EDIT PROFILE -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Edit Profile</h2>
+            </div>
+            <div class="panel-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">First Name</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Last Name</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Bio</label>
+                        {{ form.bio }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Profile Picture</label>
+                        {{ form.avatar }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- DOWNLOAD HISTORY -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Download History</h2>
+                <span style="font-size:0.8rem;color:var(--muted);">{{ downloads|length }} items</span>
+            </div>
+            <div class="panel-body">
+                {% if downloads %}
+                <div class="history-list">
+                    {% for dl in downloads %}
+                    <div class="hist-row" id="hist-{{ dl.pk }}">
+                        {% if dl.thumbnail %}
+                        <img class="hist-thumb" src="{{ dl.thumbnail }}" alt="" onerror="this.style.display='none'">
+                        {% else %}
+                        <div class="hist-thumb" style="background:var(--surface);display:flex;align-items:center;justify-content:center;">🎬</div>
+                        {% endif %}
+                        <div class="hist-info">
+                            <div class="hist-title">{{ dl.title }}</div>
+                            <div class="hist-meta">{{ dl.platform }} · {{ dl.quality }} · {{ dl.downloaded_at|date:"M d, Y" }}</div>
+                        </div>
+                        <span class="tag tag-{{ dl.format }}">{{ dl.format|upper }}</span>
+                        <button class="del-btn" onclick="deleteHistory({{ dl.pk }})" title="Delete">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14H6L5 6m5 0V4h4v2"/></svg>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    <p>No downloads yet. Go <a href="/" style="color:var(--accent)">download something</a>!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function deleteHistory(pk) {
+    if (!confirm('Remove this item from your history?')) return;
+    const res = await fetch(`/history/delete/${pk}/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'}
+    });
+    const data = await res.json();
+    if (data.success) {
+        const el = document.getElementById(`hist-${pk}`);
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(-10px)';
+        el.style.transition = 'all 0.3s';
+        setTimeout(() => el.remove(), 300);
+    }
+}
+</script>
+{% endblock %}

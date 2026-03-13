@@ -1,0 +1,226 @@
+{% extends 'core/base.html' %}
+{% block title %}{% if mode == 'signup' %}Create Account{% else %}Login{% endif %} — K & N Downloader !{% endblock %}
+{% block extra_css %}
+<style>
+    .auth-wrap {
+        min-height: calc(100vh - 64px - 80px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+
+    .auth-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 440px;
+        animation: slideUp 0.4s ease;
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-logo {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.2rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+
+    .auth-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.75rem;
+        font-weight: 800;
+        margin-bottom: 0.4rem;
+    }
+
+    .auth-sub {
+        color: var(--muted);
+        font-size: 0.875rem;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-errors {
+        margin-top: 0.4rem;
+    }
+
+    .form-error {
+        font-size: 0.8rem;
+        color: #fca5a5;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .submit-btn {
+        width: 100%;
+        background: linear-gradient(135deg, var(--accent2), var(--accent));
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.9rem;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        font-family: 'DM Sans', sans-serif;
+        transition: all 0.2s;
+        margin-top: 0.5rem;
+    }
+    .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 30px rgba(124,58,237,0.35); }
+
+    .auth-switch {
+        text-align: center;
+        margin-top: 1.5rem;
+        font-size: 0.875rem;
+        color: var(--muted);
+    }
+
+    .auth-switch a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .auth-switch a:hover { text-decoration: underline; }
+
+    .name-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 1.5rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-logo">K & N Downloader !</div>
+        {% if mode == 'signup' %}
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-sub">Join free and keep track of all your downloads permanently.</p>
+        {% else %}
+        <h1 class="auth-title">Welcome Back</h1>
+        <p class="auth-sub">Log in to access your profile and download history.</p>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            {% if mode == 'signup' %}
+            <div class="name-row">
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                    <div class="form-errors">{% for e in form.first_name.errors %}<div class="form-error">⚠ {{ e }}</div>{% endfor %}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                    <div class="form-errors">{% for e in form.last_name.errors %}<div class="form-error">⚠ {{ e }}</div>{% endfor %}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                <div class="form-errors">{% for e in form.username.errors %}<div class="form-error">⚠ {{ e }}</div>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <div class="form-errors">{% for e in form.email.errors %}<div class="form-error">⚠ {{ e }}</div>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                <div class="form-errors">{% for e in form.password1.errors %}<div class="form-error">⚠ {{ e }}</div>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                <div class="form-errors">{% for e in form.password2.errors %}<div class="form-error">⚠ {{ e }}</div>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            {% else %}
+
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                <div class="form-errors">{% for e in form.username.errors %}<div class="form-error">⚠ {{ e }}</div>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                <div class="form-errors">{% for e in form.password.errors %}<div class="form-error">⚠ {{ e }}</div>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            {% if form.non_field_errors %}
+            <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;">
+                {% for e in form.non_field_errors %}<div class="form-error">⚠ {{ e }}</div>{% endfor %}
+            </div>
+            {% endif %}
+
+            {% endif %}
+
+            <button type="submit" class="submit-btn">
+                {% if mode == 'signup' %}Create My Account{% else %}Login{% endif %}
+            </button>
+        </form>
+
+        <div class="auth-switch">
+            {% if mode == 'signup' %}
+            Already have an account? <a href="{% url 'login' %}">Login</a>
+            {% else %}
+            Don't have an account? <a href="{% url 'signup' %}">Sign up free</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
